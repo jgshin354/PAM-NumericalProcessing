@@ -58,7 +58,8 @@ The Wratten numbers are come from the catalog of the master filter maker
 Frederick Wratten of the London firm of Wratten & Wainwright purchased by 
 Kodak many years ago.
 """
-Z_tot = np.arange(0, 5)*33.2e-6  #Light Propagation Distance
+rayleigh_length = 33.2e-6
+Z_tot = np.arange(0, 5) * rayleigh_length  #Light Propagation Distance
 lambda_b = 425e-9 #Wratten #47
 lambda_g = 525e-9 #Wratten #58
 lambda_r = 700e-9 #Wratten #25
@@ -82,10 +83,12 @@ img_size = 100
 
 
 
-for Z in Z_tot:
+for Z_n in range(0,Z_tot.size):
+    Z = Z_tot[Z_n]
     prop_dist =  ('%03d' % (Z*1e6)) + 'um'
 #    imgsavdir = savedir + '\\' + prop_dist 
-    imgsavdir = savedir + '\\tot'
+#    imgsavdir = savedir + '\\tot'
+    imgsavdir = savedir + '\\R' + str(Z_n)
             
     if not(os.path.exists(imgsavdir)):
         os.mkdir(imgsavdir)
@@ -117,4 +120,54 @@ for Z in Z_tot:
         img_P[:,:,2] = img_R_P
         name = os.path.basename(file)
         name = os.path.splitext(name)[0]
-        cv.imwrite(imgsavdir + '\\' + name + '_' + prop_dist + '.png', img_P)
+        #cv.imwrite(imgsavdir + '\\' + name + '_' + prop_dist + '.png', img_P)
+        cv.imwrite(imgsavdir + '\\' + name + '.png', img_P)
+
+"""
+Packing (Training / Test) dataset
+"""    
+image_w = 100
+image_h = 100
+categories = ["R0","R1","R2", "R3", "R4"]
+nb_classes = len(categories)
+pixels = image_w * image_h * 3
+img_path = base_path + '\\003_Diffracted_data'
+# Loaging images
+X = []
+Y = []
+for idx, cat in enumerate(categories):
+    # 레이블 지정 
+    label = [0 for i in range(nb_classes)]
+    label[idx] = 1
+    # 이미지 
+    #if idx == 0 :
+    #    image_dir = base_path + '002_GroundTruth'
+    #else :
+    image_dir = img_path + "\\" + cat
+    files = glob.glob(image_dir + "\\*.png")
+    files_clip = files[0:10000].copy()       #10000장까지만 사용
+    for i, f in enumerate(files):
+        img = Image.open(f) 
+        img = img.convert("RGB")
+        img = img.resize((image_w, image_h))
+        data = np.asarray(img)      # numpy 배열로 변환
+        data = cv.normalize(data.astype(np.float64), None, 0, 1, cv.NORM_MINMAX)
+        X.append(data)
+        Y.append(label)
+        if i % 10 == 0:
+#            print(i, "\n", data)
+            print(i)
+X = np.array(X)
+Y = np.array(Y)
+
+# Discrimination between the Training dataset and the Test dataset
+# X: image, Y: label, M_test: Test data, M_train: Training data
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.1)
+#xy = (X_train, X_test, y_train, y_test)
+print('>>> data saving ...')
+np.save(base_path + '\\diffraction_classification_trainingdata_X_train_' + time.strftime('%y%m%d') + '.npy', X_train, allow_pickle=True)
+np.save(base_path + '\\diffraction_classification_trainingdata_X_test_' + time.strftime('%y%m%d') + '.npy', X_test, allow_pickle=True)
+np.save(base_path + '\\diffraction_classification_trainingdata_Y_train_' + time.strftime('%y%m%d') + '.npy', y_train, allow_pickle=True)
+np.save(base_path + '\\diffraction_classification_trainingdata_Y_test_' + time.strftime('%y%m%d') + '.npy', y_test, allow_pickle=True)
+print("ok,", len(Y))
+    

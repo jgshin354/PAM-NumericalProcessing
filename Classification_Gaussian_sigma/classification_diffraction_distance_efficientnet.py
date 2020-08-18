@@ -3,8 +3,9 @@
 Created on Wed Mar  6 11:34:36 2019
 
 @author: mit
-
+pip install -U efficientnet==0.0.4
 pip install -U git+https://github.com/qubvel/efficientnet
+pip install keras==2.4.1
 """
 # 학습
 from keras.models import Sequential
@@ -27,23 +28,23 @@ flag_specific_test_image_appl_0 = False
 flag_specific_test_image_appl_1 = False
 
 #base_path = 'D:\\H&E_dataset\\data'
-base_path = 'D:\\Exp_Data\\PAM_AI\\H&E_dataset\\data'
+base_path = 'D:\\Exp_Data\\PAM_AI\\H&E_dataset\\data_diffraction'
 
 
 if flag_train_analysis == True:
     #Specify the base path
-    file_timestamp = '200803'
+    file_timestamp = '200818'
     #Specify the categories
-    categories = ["ori", "sigma_0.5", "sigma_1.0", "sigma_1.5", "sigma_2.0"]
+    categories = ["R0", "R1", "R2", "R3", "R4"]
     nb_classes = len(categories)
     #Specify the image size
     image_w = 100
     image_h = 100
     # 데이터 열기 
-    X_train = np.load(base_path + '\\sigma_classification_trainingdata_X_train_'+ file_timestamp + '.npy')
-    X_test = np.load(base_path + '\\sigma_classification_trainingdata_X_test_'+ file_timestamp + '.npy')
-    y_train = np.load(base_path + '\\sigma_classification_trainingdata_y_train_'+ file_timestamp + '.npy')
-    y_test = np.load(base_path + '\\sigma_classification_trainingdata_y_test_'+ file_timestamp + '.npy')
+    X_train = np.load(base_path + '\\diffraction_classification_trainingdata_X_train_'+ file_timestamp + '.npy')
+    X_test = np.load(base_path + '\\diffraction_classification_trainingdata_X_test_'+ file_timestamp + '.npy')
+    y_train = np.load(base_path + '\\diffraction_classification_trainingdata_y_train_'+ file_timestamp + '.npy')
+    y_test = np.load(base_path + '\\diffraction_classification_trainingdata_y_test_'+ file_timestamp + '.npy')
 else:
     # if you want file of a specific extension (.png):
     filelist = [f for f in glob.glob(base_path + "**/*.png", recursive=True)]
@@ -67,7 +68,10 @@ output = Dense(nb_classes, activation = 'softmax')(x)
 model = Model(base_model.input, output)
 #model = multi_gpu_model(model, gpus = 2)                                       ###in case of using multi GPU
 model.summary()
-model.compile(optimizer=optimizers.Adam(lr = 1e-5), loss = 'categorical_crossentropy',  metrics=['accuracy'])
+# Original code below mingeon Kim
+# note that lr = 1e-5 for diffraction and lr = 1e-4 for gaussian results due to image complexity.
+#model.compile(optimizer=optimizers.Adam(lr = 1e-5), loss = 'categorical_crossentropy',  metrics=['accuracy']) 
+model.compile(optimizer=optimizers.Adam(lr = 5e-4), loss = 'categorical_crossentropy',  metrics=['accuracy']) #modified jgshin for low powered computer
 
 
 #%%#%% 훈련하기/Trainig fit
@@ -83,8 +87,12 @@ else:
     # 학습한 모델이 없으면 파일로 저장
     #early_stopping = EarlyStopping(monitor = 'val_loss', patience = 10)
 
-    history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, batch_size=32, callbacks=[
-    ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, verbose=1, mode='auto', min_lr=1e-06)])
+    history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=32, callbacks=[  #modified jgshin for low powered computer
+    ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, verbose=1, mode='auto', min_lr=1e-06)])  #modified jgshin for low powered computer
+    # Original code below mingeon Kim
+    #history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, batch_size=32, callbacks=[ 
+    #ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, verbose=1, mode='auto', min_lr=1e-06)]) 
+    
     #history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=500, batch_size=32, callbacks=[early_stopping])
     model.save_weights(hdf5_file)
     
@@ -148,7 +156,7 @@ import cv2 as cv
 #base_dir = "D:\\H&E_dataset\\data\\00x_test_classification"
 base_dir = base_path
 # categories = ["ori","sigma_0.5","sigma_1.0", "sigma_1.5", "sigma_0.5_sigma_1.9365"]
-categories = ["ori","sigma_0.5","sigma_1.0", "sigma_1.5", "sigma_2.0"]
+categories = ["R0", "R1", "R2", "R3", "R4"]
 nb_classes = len(categories)
 
 # 이미지 크기 지정 
@@ -184,14 +192,13 @@ if flag_specific_test_image_appl_1 == True:
 else:
     X = []
     Y = []
-    X = np.load(base_path + '\\sigma_classification_trainingdata_X_test_'+ file_timestamp + '.npy')
-    Y = np.load(base_path + '\\sigma_classification_trainingdata_Y_test_'+ file_timestamp + '.npy')
+    X = np.load(base_path + '\\diffraction_classification_trainingdata_X_test_'+ file_timestamp + '.npy')
+    Y = np.load(base_path + '\\diffraction_classification_trainingdata_Y_test_'+ file_timestamp + '.npy')
     norm_x = cv.normalize(X.astype(np.float64), None, 0, 1, cv.NORM_MINMAX)
 
 #%% (jgshin) 최종 예측 plot array
 # class_names =["ori","sigma_0.5","sigma_1.0", "sigma_1.5", "sigma_0.5_sigma_1.9365"]
-class_names = ["ori", "sigma_0.5", "sigma_1.0", "sigma_1.5", "sigma_2.0"]
-
+class_names = ["R0", "R1", "R2", "R3", "R4"]
 predictions = model.predict(X)
 pred =  predictions.astype("float16")
 

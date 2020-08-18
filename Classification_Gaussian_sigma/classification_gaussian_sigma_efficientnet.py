@@ -3,7 +3,7 @@
 Created on Wed Mar  6 11:34:36 2019
 
 @author: mit
-
+pip install -U efficientnet==0.0.4
 pip install -U git+https://github.com/qubvel/efficientnet
 """
 # 학습
@@ -67,7 +67,9 @@ output = Dense(nb_classes, activation = 'softmax')(x)
 model = Model(base_model.input, output)
 #model = multi_gpu_model(model, gpus = 2)                                       ###in case of using multi GPU
 model.summary()
-model.compile(optimizer=optimizers.Adam(lr = 1e-5), loss = 'categorical_crossentropy',  metrics=['accuracy'])
+# Original code below mingeon Kim
+#model.compile(optimizer=optimizers.Adam(lr = 1e-5), loss = 'categorical_crossentropy',  metrics=['accuracy']) 
+model.compile(optimizer=optimizers.Adam(lr = 1e-4), loss = 'categorical_crossentropy',  metrics=['accuracy']) #modified jgshin for low powered computer
 
 
 #%%#%% 훈련하기/Trainig fit
@@ -83,8 +85,12 @@ else:
     # 학습한 모델이 없으면 파일로 저장
     #early_stopping = EarlyStopping(monitor = 'val_loss', patience = 10)
 
-    history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, batch_size=32, callbacks=[
-    ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, verbose=1, mode='auto', min_lr=1e-06)])
+    history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=32, callbacks=[  #modified jgshin for low powered computer
+    ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, verbose=1, mode='auto', min_lr=1e-06)])  #modified jgshin for low powered computer
+    # Original code below mingeon Kim
+    #history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, batch_size=32, callbacks=[ 
+    #ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, verbose=1, mode='auto', min_lr=1e-06)]) 
+    
     #history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=500, batch_size=32, callbacks=[early_stopping])
     model.save_weights(hdf5_file)
     

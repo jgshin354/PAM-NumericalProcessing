@@ -166,7 +166,7 @@ image_h = 100
 categories = ["ori","sigma_0.5","sigma_1.0", "sigma_1.5", "sigma_2.0"]
 nb_classes = len(categories)
 pixels = image_w * image_h * 3
-img_path ='D:\\Exp_Data\\PAM_AI\\H&E_dataset\\data\\003_Classification_data'
+img_path = base_path + '003_Classification_data'
 # Loaging images
 X = []
 Y = []
