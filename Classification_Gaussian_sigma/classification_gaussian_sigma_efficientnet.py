@@ -3,6 +3,8 @@
 Created on Wed Mar  6 11:34:36 2019
 
 @author: mit
+
+pip install -U git+https://github.com/qubvel/efficientnet
 """
 # 학습
 from keras.models import Sequential
@@ -18,6 +20,7 @@ import os, glob
 import matplotlib.pyplot as plt
 import cv2 as cv
 from tensorflow.keras.utils import multi_gpu_model                              ###in case of using multi GPU
+from tensorflow.keras.models import Model
 
 flag_train_analysis = True
 flag_specific_test_image_appl_0 = False
@@ -80,7 +83,7 @@ else:
     # 학습한 모델이 없으면 파일로 저장
     #early_stopping = EarlyStopping(monitor = 'val_loss', patience = 10)
 
-    history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=32, callbacks=[
+    history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, batch_size=32, callbacks=[
     ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, verbose=1, mode='auto', min_lr=1e-06)])
     #history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=500, batch_size=32, callbacks=[early_stopping])
     model.save_weights(hdf5_file)
@@ -91,12 +94,12 @@ else:
     ax[0, 0].set_title('loss')
     ax[0, 0].plot(history.history['loss'], 'r')
     ax[0, 1].set_title('acc')
-    ax[0, 1].plot(history.history['acc'], 'b')
+    ax[0, 1].plot(history.history['accuracy'], 'b')
 
     ax[1, 0].set_title('val_loss')
     ax[1, 0].plot(history.history['val_loss'], 'r--')
     ax[1, 1].set_title('val_acc')
-    ax[1, 1].plot(history.history['val_acc'], 'b--')
+    ax[1, 1].plot(history.history['val_accuracy'], 'b--')
 #%%
 # 모델 평가하기 
 score = model.evaluate(X_test, y_test)
